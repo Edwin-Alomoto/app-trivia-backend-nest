@@ -6,9 +6,10 @@ import {
   UseGuards,
   HttpStatus,
 } from '@nestjs/common';
-import { AuthService } from '@MR_CHANGO/shared/auth/application/services/auth.service';
+import { AuthService } from '../../application/services/auth.service';
 
 import { User } from './decorators/user.decorator';
+import { Roles } from './decorators/roles.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -25,6 +26,10 @@ import {
   ResetPasswordDto,
 } from './dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { UserRole } from './enums/user-roles.enum';
+import { AuthGuard } from './guards/auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import type { CurrentUser } from './interface/current-user.interfaces';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -78,7 +83,7 @@ export class AuthController {
     return user;
   }
  */
-  /*  @Post('cleanup-tokens')
+  @Post('cleanup-tokens')
   @ApiOperation({
     summary: 'Limpiar tokens revocados y expirados (Solo Admins)',
   })
@@ -97,7 +102,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Token no válido.' })
   @ApiForbiddenResponse({ description: 'Sin permisos de administrador.' })
-  @Roles(Roles.ADMIN)
+  @Roles(UserRole.ADMIN)
   @UseGuards(AuthGuard, RolesGuard)
   async cleanupTokens(@User() user: CurrentUser) {
     const result = await this.authService.cleanupAllRevokedTokens();
@@ -108,7 +113,7 @@ export class AuthController {
       timestamp: new Date().toISOString(),
     };
   }
- */
+
   @Post('forgot-password')
   @ApiOperation({ summary: 'Solicitar restablecimiento de contraseña' })
   @ApiResponse({
