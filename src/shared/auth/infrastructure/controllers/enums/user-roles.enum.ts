@@ -2,7 +2,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   USER = 'USER',
   MODERATOR = 'MODERATOR',
-  GUEST = 'GUEST'
+  GUEST = 'GUEST',
 }
 
 export const VALID_ROLES = Object.values(UserRole);

@@ -91,7 +91,7 @@ export class AuthService {
           );
         }
 
-        const rol = await prisma.user_roles.create({
+        const userRole = await prisma.user_roles.create({
           data: {
             user_id: newUser.user_id,
             role_id: roles.role_id,
@@ -106,7 +106,7 @@ export class AuthService {
 
         const newUserWithRole = {
           ...newUser,
-          rol,
+          rol: userRole,
         };
 
         const tokens = await this.generateTokens(newUserWithRole, prisma);

@@ -2,4 +2,19 @@ import { User } from '@MR_CHANGO/shared/auth/domain/model/User';
 
 export interface AuthRepositoryPort {
   createUser(user: User): Promise<User>;
+  findRoles(): Promise<string[]>;
+  findRoleByUserId(user_id: string): Promise<string[]>;
+  createUserRole(user_id: string, role_id: string): Promise<any>;
+  deleteRefreshTokenByUserId(user_id: string): Promise<any>;
+  deleteRefreshTokens(): Promise<any>;
+  findUserByEmail(email: string): Promise<User | null>;
+  findUserById(user_id: string): Promise<User | null>;
+  createPasswordResetToken(
+    token: string,
+    userId: string,
+    expiresAt: Date,
+  ): Promise<any>;
+  findPasswordResetToken(token: string): Promise<any>;
+  updatePasswordResetTokenByUserId(userId: string): Promise<any>;
+  updatePasswordResetTokenUsed(token: string): Promise<any>;
 }
