@@ -1,0 +1,335 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model answers {
+  answer_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question_id  String    @db.Uuid
+  answer_text  String
+  is_correct   Boolean?  @default(false)
+  answer_order Int?
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  questions    questions @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+  results      results[]
+}
+
+model categories {
+  category_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status        String    @db.VarChar(20)
+  name          String    @unique @db.VarChar(50)
+  category_type String?   @db.VarChar(50)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  trivias       trivias[]
+}
+
+model difficulties {
+  difficulty_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status        String    @db.VarChar(20)
+  name          String    @unique @db.VarChar(50)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  trivias       trivias[]
+}
+
+model email_verification_tokens {
+  token_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token      String    @unique @db.VarChar(255)
+  expires_at DateTime  @db.Timestamptz(6)
+  used       Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model password_reset_tokens {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token      String    @unique @db.VarChar(255)
+  user_id    String    @db.Uuid
+  expires_at DateTime  @db.Timestamptz(6)
+  used       Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "idx_password_reset_tokens_expires_at")
+  @@index([token], map: "idx_password_reset_tokens_token")
+  @@index([user_id], map: "idx_password_reset_tokens_user_id")
+}
+
+model points {
+  point_id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  source_type    String
+  source_id      String    @db.Uuid
+  points_awarded Int
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model question_responses {
+  question_response_id String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  response_id          String           @db.Uuid
+  question_id          String           @db.Uuid
+  selected_option_id   String?          @db.Uuid
+  answer_text          String?
+  created_at           DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?        @default(now()) @db.Timestamptz(6)
+  survey_questions     survey_questions @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+  survey_responses     survey_responses @relation(fields: [response_id], references: [response_id], onDelete: Cascade, onUpdate: NoAction)
+  survey_options       survey_options?  @relation(fields: [selected_option_id], references: [option_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model question_results {
+  question_result_id String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id         String          @db.Uuid
+  question_id        String          @db.Uuid
+  fully_correct      Boolean
+  points_awarded     Int?            @default(0)
+  created_at         DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?       @default(now()) @db.Timestamptz(6)
+  questions          questions       @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+  trivia_sessions    trivia_sessions @relation(fields: [session_id], references: [session_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model questions {
+  question_id      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trivia_id        String             @db.Uuid
+  question_text    String
+  image_url        String?
+  points           Int?
+  time_seconds     Int
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  answers          answers[]
+  question_results question_results[]
+  trivias          trivias            @relation(fields: [trivia_id], references: [trivia_id], onDelete: Cascade, onUpdate: NoAction)
+  results          results[]
+}
+
+model raffle_tickets {
+  ticket_id      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raffle_id      String           @db.Uuid
+  user_id        String           @db.Uuid
+  ticket_number  Int
+  points_used    Int
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  raffles        raffles          @relation(fields: [raffle_id], references: [raffle_id], onDelete: Cascade, onUpdate: NoAction)
+  raffle_winners raffle_winners[]
+}
+
+model raffle_winners {
+  winner_id      String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raffle_id      String         @db.Uuid
+  ticket_id      String         @db.Uuid
+  user_id        String         @db.Uuid
+  awarded_at     DateTime?      @default(now()) @db.Timestamptz(6)
+  raffles        raffles        @relation(fields: [raffle_id], references: [raffle_id], onDelete: Cascade, onUpdate: NoAction)
+  raffle_tickets raffle_tickets @relation(fields: [ticket_id], references: [ticket_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model raffles {
+  raffle_id      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  start_date     DateTime         @db.Timestamptz(6)
+  end_date       DateTime         @db.Timestamptz(6)
+  max_tickets    Int?
+  ticket_cost    Int?             @default(1)
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  raffle_tickets raffle_tickets[]
+  raffle_winners raffle_winners[]
+}
+
+model results {
+  result_id       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id      String          @db.Uuid
+  question_id     String          @db.Uuid
+  answer_id       String          @db.Uuid
+  selected        Boolean
+  is_correct      Boolean
+  created_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  answers         answers         @relation(fields: [answer_id], references: [answer_id], onDelete: Cascade, onUpdate: NoAction)
+  questions       questions       @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+  trivia_sessions trivia_sessions @relation(fields: [session_id], references: [session_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model rewards {
+  reward_id       String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  description     String?
+  points_required Int?
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  user_rewards    user_rewards[]
+}
+
+model roles {
+  role_id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status           String       @db.VarChar(20)
+  role_name        String       @unique @db.VarChar(50)
+  role_description String       @db.VarChar(100)
+  user_roles       user_roles[]
+}
+
+model survey_options {
+  option_id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question_id        String               @db.Uuid
+  option_text        String
+  option_order       Int?
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  question_responses question_responses[]
+  survey_questions   survey_questions     @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model survey_questions {
+  question_id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id          String               @db.Uuid
+  question_text      String
+  question_type      String
+  required           Boolean?             @default(true)
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  question_responses question_responses[]
+  survey_options     survey_options[]
+  surveys            surveys              @relation(fields: [survey_id], references: [survey_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model survey_responses {
+  response_id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  survey_id          String               @db.Uuid
+  user_id            String?              @db.Uuid
+  completed          Boolean?             @default(false)
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  score              Int?
+  question_responses question_responses[]
+  surveys            surveys              @relation(fields: [survey_id], references: [survey_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model surveys {
+  survey_id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  description      String?
+  is_active        Boolean?           @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  survey_questions survey_questions[]
+  survey_responses survey_responses[]
+}
+
+model trivia_sessions {
+  session_id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trivia_id         String             @db.Uuid
+  user_id           String?            @db.Uuid
+  hint_used         Boolean?           @default(false)
+  score             Int?
+  session_completed Boolean?
+  created_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?          @default(now()) @db.Timestamptz(6)
+  question_results  question_results[]
+  results           results[]
+  trivias           trivias            @relation(fields: [trivia_id], references: [trivia_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model trivias {
+  trivia_id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id      String            @db.Uuid
+  difficulty_id    String            @db.Uuid
+  status           String            @db.VarChar(20)
+  description      String
+  number_questions Int
+  created_at       DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamptz(6)
+  questions        questions[]
+  trivia_sessions  trivia_sessions[]
+  categories       categories        @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  difficulties     difficulties      @relation(fields: [difficulty_id], references: [difficulty_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_profiles {
+  profile_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String?   @unique @db.Uuid
+  user_type     String?   @db.VarChar(80)
+  profile_image String?
+  total_score   Int?      @default(0)
+  win_score     Int?      @default(0)
+  spent_points  Int?      @default(0)
+  sale_points   Int?      @default(0)
+  demo_points   Int?      @default(0)
+  real_points   Int?      @default(0)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([total_score], map: "idx_user_profiles_total_score")
+  @@index([user_id], map: "idx_user_profiles_user_id")
+  @@index([user_type], map: "idx_user_profiles_user_type")
+}
+
+model user_rewards {
+  user_reward_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  reward_id      String    @db.Uuid
+  awarded_at     DateTime? @default(now()) @db.Timestamptz(6)
+  rewards        rewards   @relation(fields: [reward_id], references: [reward_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_roles {
+  user_id    String    @db.Uuid
+  role_id    String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  roles      roles     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([user_id, role_id])
+  @@index([role_id], map: "idx_user_roles_role_id")
+  @@index([user_id], map: "idx_user_roles_user_id")
+}
+
+model users {
+  user_id                   String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status                    String                      @db.VarChar(20)
+  first_name                String                      @db.VarChar(25)
+  last_name                 String                      @db.VarChar(25)
+  address                   String?                     @db.VarChar(50)
+  username                  String                      @unique @db.VarChar(25)
+  email                     String                      @unique @db.VarChar(50)
+  password_hash             String                      @db.VarChar(100)
+  phone                     String?                     @db.VarChar(20)
+  birth_date                DateTime?                   @db.Date
+  gender                    String?                     @db.VarChar(10)
+  email_verified            Boolean?                    @default(false)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  is_active                 Boolean?                    @default(true)
+  expires_at                DateTime?                   @db.Timestamp(6)
+  email_verification_tokens email_verification_tokens[]
+  password_reset_tokens     password_reset_tokens[]
+  refresh_tokens            refresh_tokens[]
+
+  @@index([email], map: "idx_users_email")
+  @@index([is_active], map: "idx_users_is_active")
+  @@index([status], map: "idx_users_status")
+  @@index([username], map: "idx_users_username")
+}
+
+model refresh_tokens {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token      String   @unique @db.VarChar(255)
+  user_id    String   @db.Uuid
+  is_revoked Boolean  @default(false)
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_tokens_user_id")
+}
