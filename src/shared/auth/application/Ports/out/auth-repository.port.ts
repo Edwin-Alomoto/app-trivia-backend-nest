@@ -1,12 +1,21 @@
 import { User } from '@MR_CHANGO/shared/auth/domain/model/User';
+import { PrismaClient } from '@prisma/client/extension';
 
 export interface AuthRepositoryPort {
-  createUser(user: User): Promise<User>;
-  findRoles(): Promise<string[]>;
-  findRoleByUserId(user_id: string): Promise<string[]>;
-  createUserRole(user_id: string, role_id: string): Promise<any>;
-  deleteRefreshTokenByUserId(user_id: string): Promise<any>;
-  deleteRefreshTokens(): Promise<any>;
+  createUser(user: User, prisma: PrismaClient): Promise<User>;
+  findRole(prisma: PrismaClient): Promise<string[]>;
+  findRoleByUserId(user_id: string, prisma: PrismaClient): Promise<string[]>;
+  createUserRole(
+    user_id: string,
+    role_id: string,
+    prisma: PrismaClient,
+  ): Promise<any>;
+  deleteRefreshTokenByUserId(
+    user_id: string,
+    prisma: PrismaClient,
+  ): Promise<any>;
+  deleteRefreshTokens(prisma: PrismaClient): Promise<any>;
+  findRefreshTokenByUserId(user_id: string, prisma: PrismaClient): Promise<any>;
   findUserByEmail(email: string): Promise<User | null>;
   findUserById(user_id: string): Promise<User | null>;
   createPasswordResetToken(
