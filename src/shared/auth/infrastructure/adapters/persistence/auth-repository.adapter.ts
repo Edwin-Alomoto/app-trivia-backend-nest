@@ -53,12 +53,56 @@ export class AuthRepositoryAdapter implements AuthRepositoryPort {
     prisma?: PrismaClient,
   ): Promise<any> {
     prisma = prisma ?? this.prismaService;
+    const now = new Date();
     const deletedToken = await prisma.refresh_tokens.deleteMany({
       where: {
         user_id: user_id,
+        OR: [
+          { is_revoked: true }, // Tokens revocados
+          { expires_at: { lt: now } }, // Tokens expirados
+        ],
       },
     });
     return deletedToken;
+  }
+  async updateRefreshTokenById(id: string, prisma: PrismaClient): Promise<any> {
+    prisma = prisma ?? this.prismaService;
+    const updatedToken = await prisma.refresh_tokens.update({
+      where: {
+        id: id,
+      },
+      data: {
+        is_revoked: true,
+      },
+    });
+    return updatedToken;
+  }
+
+  async createRefreshToken(
+    token: string,
+    userId: string,
+    expiresAt: Date,
+    prisma: PrismaClient,
+  ): Promise<any> {
+    prisma = prisma ?? this.prismaService;
+    const newRefreshToken = await prisma.refresh_tokens.create({
+      data: {
+        token,
+        user_id: userId,
+        expires_at: expiresAt,
+      },
+    });
+    return newRefreshToken;
+  }
+
+  async findRefreshToken(prisma: PrismaClient): Promise<any> {
+    prisma = prisma ?? this.prismaService;
+    const refreshToken = await prisma.refresh_tokens.findFirst({
+      where: {
+        is_revoked: false,
+      },
+    });
+    return refreshToken;
   }
 
   async findRefreshTokenByUserId(
@@ -77,9 +121,15 @@ export class AuthRepositoryAdapter implements AuthRepositoryPort {
 
   async deleteRefreshTokens(prisma?: PrismaClient): Promise<any> {
     prisma = prisma ?? this.prismaService;
-    const deletedTokens = await prisma.refresh_tokens.deleteMany({});
-    return deletedTokens;
-    throw new Error('Method not implemented.');
+    const now = new Date();
+    const deletedTokens = await this.prismaService.refresh_tokens.deleteMany({
+      where: {
+        OR: [
+          { is_revoked: true }, // Tokens revocados
+          { expires_at: { lt: now } }, // Tokens expirados
+        ],
+      },
+    });
   }
   async findUserByEmail(email: string): Promise<User | null> {
     const existingUser = await this.prismaService.users.findUnique({
@@ -91,21 +141,49 @@ export class AuthRepositoryAdapter implements AuthRepositoryPort {
   findUserById(user_id: string): Promise<User | null> {
     throw new Error('Method not implemented.');
   }
-  createPasswordResetToken(
+  async createPasswordResetToken(
     token: string,
     userId: string,
     expiresAt: Date,
   ): Promise<any> {
-    throw new Error('Method not implemented.');
+    await this.prismaService.password_reset_tokens.create({
+      data: {
+        token: token,
+        user_id: userId,
+        expires_at: expiresAt,
+      },
+    });
   }
-  findPasswordResetToken(token: string): Promise<any> {
-    throw new Error('Method not implemented.');
+  async findPasswordResetToken(token: string): Promise<any> {
+    const passwordResetToken =
+      await this.prismaService.password_reset_tokens.findUnique({
+        where: { token },
+        include: { users: true },
+      });
+    return passwordResetToken;
   }
-  updatePasswordResetTokenByUserId(userId: string): Promise<any> {
-    throw new Error('Method not implemented.');
+  async updatePasswordResetTokenByUserId(userId: string): Promise<any> {
+    await this.prismaService.refresh_tokens.updateMany({
+      where: { user_id: userId },
+      data: { is_revoked: true },
+    });
   }
-  updatePasswordResetTokenUsed(token: string): Promise<any> {
-    throw new Error('Method not implemented.');
+  async updatePasswordResetTokenById(id: string): Promise<any> {
+    await this.prismaService.password_reset_tokens.update({
+      where: { id: id },
+      data: { used: true },
+    });
+  }
+  async deletePasswordResetTokenByUserId(userId: string): Promise<void> {
+    await this.prismaService.password_reset_tokens.updateMany({
+      where: {
+        user_id: userId,
+        used: false,
+      },
+      data: {
+        used: true,
+      },
+    });
   }
   async createUser(user: User, prisma?: PrismaClient): Promise<User> {
     prisma = prisma ?? this.prismaService;
@@ -115,5 +193,21 @@ export class AuthRepositoryAdapter implements AuthRepositoryPort {
       data: userToPersist,
     });
     return UserMapper.toDomain(newUser);
+  }
+
+  async updateUser(
+    userId: string,
+    passwordHash: string,
+    prisma?: PrismaClient,
+  ): Promise<User> {
+    prisma = prisma ?? this.prismaService;
+    const updatedUser = await prisma.users.update({
+      where: { user_id: userId },
+      data: {
+        password_hash: passwordHash,
+        updated_at: new Date(),
+      },
+    });
+    return UserMapper.toDomain(updatedUser);
   }
 }

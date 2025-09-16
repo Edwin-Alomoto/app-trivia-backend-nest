@@ -10,12 +10,25 @@ export interface AuthRepositoryPort {
     role_id: string,
     prisma: PrismaClient,
   ): Promise<any>;
+  updateUser(
+    userId: string,
+    passwordHash: string,
+    prisma: PrismaClient,
+  ): Promise<User>;
   deleteRefreshTokenByUserId(
     user_id: string,
     prisma: PrismaClient,
   ): Promise<any>;
   deleteRefreshTokens(prisma: PrismaClient): Promise<any>;
+  updateRefreshTokenById(id: string, prisma: PrismaClient): Promise<any>;
   findRefreshTokenByUserId(user_id: string, prisma: PrismaClient): Promise<any>;
+  findRefreshToken(prisma: PrismaClient): Promise<any>;
+  createRefreshToken(
+    token: string,
+    userId: string,
+    expiresAt: Date,
+    prisma: PrismaClient,
+  ): Promise<any>;
   findUserByEmail(email: string): Promise<User | null>;
   findUserById(user_id: string): Promise<User | null>;
   createPasswordResetToken(
@@ -25,5 +38,6 @@ export interface AuthRepositoryPort {
   ): Promise<any>;
   findPasswordResetToken(token: string): Promise<any>;
   updatePasswordResetTokenByUserId(userId: string): Promise<any>;
-  updatePasswordResetTokenUsed(token: string): Promise<any>;
+  updatePasswordResetTokenById(id: string): Promise<any>;
+  deletePasswordResetTokenByUserId(userId: string): Promise<void>;
 }
